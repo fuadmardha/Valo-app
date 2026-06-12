@@ -19,40 +19,39 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build web app
         run: npm run build
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install Android build tools
-        run: sdkmanager "build-tools;33.0.2" "platforms;android-33"
-
-      - name: Sync Capacitor
+      - name: Sync Capacitor Android
         run: npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build Debug APK
+      - name: Update gradle wrapper
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          cat gradle/wrapper/gradle-wrapper.properties
 
-      - name: Upload APK
+      - name: Build Debug APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2048m"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VALO-debug
+          name: VALO-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
